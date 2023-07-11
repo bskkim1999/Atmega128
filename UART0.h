@@ -1,16 +1,17 @@
 #ifndef UART0_H_
 #define UART0_H_
 
-extern "C"{
-	void UART0_init(void);
 
-	void UART0_transmit(char data);
+void UART0_init(void);
 
-	unsigned char UART0_receive(void);
+void UART0_transmit(char data);
 
-	void UART0_print_string(char *str);
+unsigned char UART0_receive(void);
 
-	void UART0_print_1_byte_number(uint8_t n);
+void UART0_print_string(char *str);
 
-	void UART0_print_float(float f);
-};
+void UART0_print_1_byte_number(uint8_t n);
+
+void UART0_print_float(float f);
+
+#endif
