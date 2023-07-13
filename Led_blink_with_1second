@@ -27,8 +27,7 @@ ISR(TIMER0_OVF_vect){
 	timer0_millis = m;
 	timer0_micros = f;
 	
-	//printf("%lu \r\n", m);    //atmega128은 한번에 8비트를 보낼 수 있는데, uart통신과 led 업무까지 합하면 총 9비트를 한번에 담당하게 된다. 따라서
-                              // 약간의 블링크 지연이 발생한다.
+	//printf("%lu \r\n", m);    // uart의 오버런현상때문에 지연이 발생한다.
 	
 }
 
