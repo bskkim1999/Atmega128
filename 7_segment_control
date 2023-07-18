@@ -1,0 +1,45 @@
+//코드설명 : 7세그먼트가 0.5초에 한 번씩 숫자1이 증가하는 코드이다.
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <string.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+unsigned char patterns[]={0xFC, 0x60, 0xDA, 0xF2, 0x66, 0xB6, 0xBE, 0xE4, 0xFE, 0xE6}; //0 1 2 3 4 5 6 7 8 9
+
+
+int main(void){
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	/*variable*/
+	int count=0;
+	
+	/*uart*/
+	UART0_init();
+	
+	/*function*/
+	
+	
+	/*gpio*/
+	DDRA = 0xff;
+	
+	
+	while(1){
+		
+		
+		PORTA = patterns[count];
+		count = (count + 1) % 10; // count : 0 ~ 9
+		
+		_delay_ms(500);
+		
+	}
+	
+	return 0;
+}
