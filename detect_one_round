@@ -1,0 +1,103 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <string.h>
+#include <util/atomic.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+
+volatile int count = 0;
+
+//encoder
+ISR(INT0_vect){
+	
+	
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+		count = count +1;
+		/*
+		if(count >= 1007) {
+			cli();
+			OCR1A = 0;  //dutycycle 0%
+			return 0;
+		}
+		
+		else{
+			count = count + 1;
+			//printf("%d \r\n", count);
+		}
+		*/
+	}
+		
+		
+		
+}
+
+//pwm
+void InitializeTimer1(void){
+	
+	TCCR1A = 0x82;  // pre-scaler : 8, fast pwm, output mode
+	TCCR1B = 0x1a;
+	
+	ICR1 = 39999;  //compare-match : fpwm = 50hz
+	
+	
+	
+}
+
+//interrupt (external)
+void INIT_INT0(void){
+	
+	EIMSK = 0x01;   //external interrupt INT0(PD0)
+	EICRA = 0x03;  //rising edge
+	sei();  //global interrupt(accept)
+	
+	
+	
+}
+
+int main(void){
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	/*variable*/
+	
+	
+	/*uart*/
+	UART0_init();
+	
+	/*gpio*/
+	DDRA = 0xff;  //output
+	DDRB = 0xff;  //output
+	DDRD = 0x00;  //input
+	
+	
+	/*timer&counter*/
+	
+	INIT_INT0();
+	InitializeTimer1();
+	
+	
+	
+	PORTA = 0xff;
+	OCR1A = 2000;   //dutycycle 
+	/* Replace with your application code */
+	while (1) {
+		
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			if(count >= 1007) {
+				OCR1A = 0;
+				break;
+			}
+		}
+		
+	}
+	
+	printf("finish!");
+	return 0;
+}
