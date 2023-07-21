@@ -1,0 +1,62 @@
+//설명 : 서보모터(sg90)에 전원(5v)을 따로 인가해주었다. (전기적잡음이 atmega128에 영향을 미치기 때문) 자세한 내용은 블로그 참조 바람.
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <string.h>
+#include <util/atomic.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+void InitializeTimer1(void){
+	
+	TCCR1A = 0x82;  // pre-scaler : 8, fast pwm, output mode
+	TCCR1B = 0x1a;
+	
+	ICR1 = 39999;  //compare-match : fpwm = 50hz
+	
+	
+	
+	
+	
+}
+
+int main(void){
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	/*variable*/
+	
+	
+	/*uart*/
+	//UART0_init();
+	
+	/*gpio*/
+	
+	DDRB = 0xff; //output 
+	
+	/*timer&counter*/
+	InitializeTimer1();
+	
+	
+	int i=800;  //dutycycle = 2%
+	/* Replace with your application code */
+	while (1) {
+		//0 degree ~ 180 degree
+		while(i<=4800){
+			
+			OCR1A = i;    //duty-cycle
+			_delay_ms(50);
+			i = i+10;
+		}
+		
+		
+	}
+	
+	
+	return 0;
+}
