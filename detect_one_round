@@ -90,7 +90,7 @@ int main(void){
 	while (1) {
 		
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-			if(count >= 1007) {
+			if(count >= 1007) {   //1바퀴
 				OCR1A = 0;
 				break;
 			}
