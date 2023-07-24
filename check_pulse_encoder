@@ -53,7 +53,8 @@ int main(void){
 	/*gpio*/
 	
 	DDRA = 0xff; //output
-	
+	DDRC = 0x00; //input
+	PORTC = 0xff; //pull-up resistor
 	/*timer&counter*/
 	
 	INIT_INT0();
@@ -63,7 +64,11 @@ int main(void){
 	while (1) {
 		
 		
-		if(count == 35) break;
+		if(count == 35) {
+			if(0x00 == (PINC & 0x01)){
+				break;
+			}
+		}
 		
 		
 	}
