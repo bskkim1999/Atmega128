@@ -65,7 +65,7 @@ void LCD_init(void){
 	
 	LCD_write_command(COMMAND_8_BIT_MODE);  //command = 0011 0000   //8bit mode
 	
-	unsigned char command = 0x0c; //0x08 | (1 << COMMAND_BLINK_ON_OFF_BIT); //command = 0000 1000 | 0000 0001 = 0000 1001
+	unsigned char command = 0x08 | (1 << COMMAND_DISPLAY_ON_OFF_BIT); //command = 0000 1000 | 0000 0100 = 0000 1100
 	LCD_write_command(command);  //command = command
 	
 	LCD_clear();
@@ -108,10 +108,13 @@ int main(void){
 	_delay_ms(500);
 	
 	LCD_goto_XY(0,1);
-	LCD_write_data('h');
-	LCD_goto_XY(1,2);
+	LCD_write_data('a');
+	LCD_write_data('b');
+	LCD_write_data('c');
+	LCD_goto_XY(1,1);
+	LCD_write_data('d');
 	LCD_write_data('e');
-	
+	LCD_write_data('f');
 	/* Replace with your application code */
 	while (1) {
 		
