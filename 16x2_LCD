@@ -75,17 +75,18 @@ void LCD_init(void){
 }
 
 void LCD_goto_XY(unsigned char row, unsigned char col){
-	
-	col %= 20;  //0 ~ 19
-	row %= 4;   //0 ~ 3
-	
-	
-	unsigned char address = (0x40 * row) + col;  // (0100 * row) + col
-	unsigned char command = 0x80 + address;  //1000 0000 + (0100 * row) + col
+	unsigned char command;
+	if(row == 0){
+		command = 128 + col;
+	}
+	else if(row == 1){
+		command = 148 + col;
+	}
 	
 	LCD_write_command(command);
 	
 }
+
 int main(void){
 	
 	stdout = &OUTPUT;
@@ -104,10 +105,11 @@ int main(void){
 	
 	LCD_init();
 	LCD_clear();
-	_delay_ms(1000);
+	_delay_ms(500);
 	
-	LCD_goto_XY(1, 3);
+	LCD_goto_XY(0,1);
 	LCD_write_data('h');
+	LCD_goto_XY(1,2);
 	LCD_write_data('e');
 	
 	/* Replace with your application code */
