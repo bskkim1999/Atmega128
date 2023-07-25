@@ -57,15 +57,15 @@ void LCD_clear(void){
 void LCD_init(void){
 	_delay_ms(50);
 	
-	DDR_DATA = 0xff;  //DDRD = 0xff
-	PORT_DATA = 0x00; //PORTD = 0x00
+	DDR_DATA = 0xff;  //DDRD = 0xff  output
+	PORT_DATA = 0x00; //PORTD = 0x00  //low
 	DDR_CONTROL |= (1 << RS_PIN) | (1 << RW_PIN) | (1 << E_PIN);  //DDRC = DDRC | 0000 0001 | 0000 0010 | 0000 0100
 	
-	PORT_CONTROL &= ~(1 << RW_PIN); //PORTC = ~(PORTC & 0000 0001)
+	PORT_CONTROL &= ~(1 << RW_PIN); //PORTC = ~(PORTC & 0000 0001)   //write mode
 	
-	LCD_write_command(COMMAND_8_BIT_MODE);  //command = 0011 0000
+	LCD_write_command(COMMAND_8_BIT_MODE);  //command = 0011 0000   //8bit mode
 	
-	unsigned char command = 0x08 | (1 << COMMAND_BLINK_ON_OFF_BIT); //command = 0000 1000 | 0000 0001
+	unsigned char command = 0x0c; //0x08 | (1 << COMMAND_BLINK_ON_OFF_BIT); //command = 0000 1000 | 0000 0001 = 0000 1001
 	LCD_write_command(command);  //command = command
 	
 	LCD_clear();
@@ -76,11 +76,12 @@ void LCD_init(void){
 
 void LCD_goto_XY(unsigned char row, unsigned char col){
 	
-	col %= 16;
-	row %= 2;
+	col %= 20;  //0 ~ 19
+	row %= 4;   //0 ~ 3
 	
-	unsigned char address = (0x40 * row) + col;
-	unsigned char command = 0x80 + address;
+	
+	unsigned char address = (0x40 * row) + col;  // (0100 * row) + col
+	unsigned char command = 0x80 + address;  //1000 0000 + (0100 * row) + col
 	
 	LCD_write_command(command);
 	
@@ -104,8 +105,10 @@ int main(void){
 	LCD_init();
 	LCD_clear();
 	_delay_ms(1000);
+	
 	LCD_goto_XY(1, 3);
-	LCD_write_data('1');
+	LCD_write_data('h');
+	LCD_write_data('e');
 	
 	/* Replace with your application code */
 	while (1) {
