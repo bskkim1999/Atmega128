@@ -1,0 +1,68 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+const unsigned char steps[8] = {0x01,0x03,0x02,0x06,0x04,0x0c,0x08,0x09};
+
+////////////////////////////////////////////////////////////////////////////////////
+
+void clockwise_func(void){
+	
+	// 8steps
+	for(int i=0 ; i<8 ; i++){
+		PORTB = steps[i];
+		_delay_ms(1);
+	}
+	
+	
+}
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+int main() {
+	
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	unsigned char angle[] = "\0";  //1byte
+	double angle_steps=0;  //4byte
+	int angle_steps_int=0;
+	/*uart*/
+	UART0_init();
+	
+	
+	DDRB = 0xff;
+	
+	while(1){
+		printf("input angle : ");
+		scanf("%s", &angle);
+		angle_steps = atof(angle);  //string -> double
+		angle_steps = angle_steps * 1.4222222;
+		angle_steps_int = angle_steps;
+		
+		for(int i=0 ; i<angle_steps_int ; i++){
+			clockwise_func();
+		}
+	}
+	
+	
+	
+	
+	
+	
+	return 0;
+}
