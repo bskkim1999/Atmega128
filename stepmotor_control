@@ -25,6 +25,16 @@ void clockwise_func(void){
 	
 }
 
+void counter_clockwise_func(void){
+	
+	// 8steps
+	for(int i=7 ; i>=0 ; i--){
+		PORTB = steps[i];
+		_delay_ms(1);
+	}
+	
+	
+}
 
 
 
@@ -34,29 +44,47 @@ void clockwise_func(void){
 
 int main() {
 	
+	int angle_steps;
+	int direction;
 	
 	stdout = &OUTPUT;
 	stdin = &INPUT;
 	
-	unsigned char angle[] = "\0";  //1byte
-	double angle_steps=0;  //4byte
-	int angle_steps_int=0;
+	
 	/*uart*/
 	UART0_init();
 	
 	
+	
 	DDRB = 0xff;
 	
+	
+	
 	while(1){
-		printf("input angle : ");
-		scanf("%s", &angle);
-		angle_steps = atof(angle);  //string -> double
-		angle_steps = angle_steps * 1.4222222;
-		angle_steps_int = angle_steps;
 		
-		for(int i=0 ; i<angle_steps_int ; i++){
-			clockwise_func();
+		
+		printf("input angle and direction(cw:1, ccw:-1)(ex : 180 1) : ");
+		scanf("%d %d", &angle_steps, &direction);
+		//angle_steps = atof(angle);  //string -> double
+		angle_steps = angle_steps * 1.4222222;
+		
+		if(direction==1){
+			for(int i=0 ; i<angle_steps ; i++){
+				clockwise_func();
+			}
 		}
+		
+		else if(direction==-1){
+			for(int i=0 ; i<angle_steps ; i++){
+				counter_clockwise_func();
+			}
+		}
+		
+		else{
+			continue;
+		}
+		
+		
 	}
 	
 	
