@@ -10,42 +10,45 @@
 FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
 FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
 
-const unsigned char steps[8] = {0x01,0x03,0x02,0x06,0x04,0x0c,0x08,0x09};
+const unsigned char steps[] = {0x01,0x03,0x02,0x06,0x04,0x0c,0x08,0x09};
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-void clockwise_func(void){
+void clockwise_func(int count_steps_local){
 	
-	// 8steps
-	for(int i=0 ; i<8 ; i++){
-		PORTB = steps[i];
-		_delay_ms(1);
+	while(count_steps_local > 0){
+		
+		for(int i=0 ; i<8 ; i++){
+			PORTB = steps[i];
+			count_steps_local--;
+			_delay_ms(1);
+		}
+	}
+	
+}
+
+void counter_clockwise_func(int count_steps_local){
+	
+	while(count_steps_local > 0){
+		for(int i=7 ; i>=0 ; i--){
+			PORTB = steps[i];
+			count_steps_local--;
+			_delay_ms(1);
+		}
 	}
 	
 	
 }
-
-void counter_clockwise_func(void){
-	
-	// 8steps
-	for(int i=7 ; i>=0 ; i--){
-		PORTB = steps[i];
-		_delay_ms(1);
-	}
-	
-	
-}
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////
 
 
 int main() {
 	
-	int angle_steps;
+	int angle;
 	int direction;
+	int count_steps=0;
 	
 	stdout = &OUTPUT;
 	stdin = &INPUT;
@@ -53,31 +56,21 @@ int main() {
 	
 	/*uart*/
 	UART0_init();
-	
-	
-	
 	DDRB = 0xff;
 	
-	
-	
 	while(1){
-		
-		
 		printf("input angle and direction(cw:1, ccw:-1)(ex : 180 1) : ");
-		scanf("%d %d", &angle_steps, &direction);
-		//angle_steps = atof(angle);  //string -> double
-		angle_steps = angle_steps * 1.4222222;
+		scanf("%d %d", &angle, &direction);
 		
+		count_steps = angle * 11.3778;
+		
+		//cw
 		if(direction==1){
-			for(int i=0 ; i<angle_steps ; i++){
-				clockwise_func();
-			}
+			clockwise_func(count_steps);
 		}
-		
+		//ccw
 		else if(direction==-1){
-			for(int i=0 ; i<angle_steps ; i++){
-				counter_clockwise_func();
-			}
+			counter_clockwise_func(count_steps);
 		}
 		
 		else{
@@ -86,10 +79,6 @@ int main() {
 		
 		
 	}
-	
-	
-	
-	
 	
 	
 	return 0;
