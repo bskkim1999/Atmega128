@@ -1,0 +1,168 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+//////////////////////////global variable/////////////////////////////////////////////
+const unsigned char cw_steps[] = {0x01,0x03,0x02,0x06,0x04,0x0c,0x08,0x09};
+const unsigned char ccw_steps[] = {0x09,0x08,0x0c,0x04,0x06,0x02,0x03,0x01};
+int distance = 0;
+double time_steppermotor = 0;
+int i=0;
+int i2=0;
+////////////////////////////////////////////////////////////////////////////////////
+//////////////////ultrasonic sensor /////////////////////////////
+//explanation : 약 1ms마다 오버플로 인터럽트를 발생시킴으로써 스텝모터를 작동시킴.
+ISR(TIMER0_OVF_vect){
+	
+	if(distance <= 12){
+		i2=0;
+		PORTD = 0x01;
+		PORTB = ccw_steps[i];   //ccw
+		i = (i+1) % 8;   // repeat 0 ~ 7
+		//printf("%d \r\n", i);
+		//custom_delay_ms(time_steppermotor);  //1ms
+		//_delay_ms(1);
+		
+	}
+	
+	
+	else{
+		i=0;
+		PORTD = 0x02;
+		PORTB = cw_steps[i2];  //cw
+		i2 = (i2 + 1) % 8;   // repeat 0 ~ 7
+		//custom_delay_ms(time_steppermotor);  //1ms
+		//_delay_ms(1);
+		
+		
+	}
+	
+	
+}
+//ex : 1000 -> 1s, 10 -> 10ms
+void custom_delay_ms(double ms){
+	for (int x=0 ; x < ms ; x ++){
+		_delay_ms(1);
+	}
+}
+
+int measure_distance(void){
+	
+	Timer_init();
+	
+	//trig pin//
+	PORTC = PORTC & 0xfe; //PORTC & 1111 1110
+	_delay_us(10);
+	PORTC = PORTC | 0x01; //PORTC | 0000 0001
+	_delay_us(10);
+	PORTC = PORTC & 0xfe; //PORTC & 1111 1110 
+	
+	
+	
+	TCNT1 = 0x0000;
+	
+	
+	while(    (PINC & 0x02) == 0x00  ){
+		if(TCNT1 > 65535 ){
+			return 0;
+		}
+		
+	}
+	
+	
+	TCNT1 = 0x0000;   //start : timerCounter1
+	
+	while(   (PINC & 0x02) == 0x02    );
+	
+	TCCR1B=0x00;  // stop : timerCounter1
+	
+	float pulse_time = (1024.0 * TCNT1) / 16;    //notice : literal constant!!
+	
+	
+	return pulse_time / 58;
+	
+}
+
+void Timer_init(void){
+	
+	TCCR1B = 0x05;  //pre-scaler : 1024
+	
+}
+
+
+
+//////////////stepper motor/////////////////////
+/*
+void counter_clockwise_func(void){
+	
+	int i=0;
+	
+	while(1){
+		PORTB = ccw_steps[i];
+		i = (i+1) % 8;   // 0 ~ 7
+		//custom_delay_ms(time_steppermotor);  //1ms
+		_delay_ms(1);
+	}	
+	
+	
+}
+
+void clockwise_func(void){
+	
+	int i = 0;
+	
+	while(1){
+		PORTB = cw_steps[i];
+		i = (i+1) % 8;   // 0 ~ 7
+		_delay_ms(1);  //1ms
+		
+	}
+	
+}
+*/
+/////////////////////////////main function////////////////////////////////////////////
+
+
+int main() {
+	//variable//
+	
+	
+	
+	//stream//
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	
+	//uart//
+	UART0_init();
+	
+	//gpio//
+	DDRB = 0x0f;  //0000 1111
+	DDRC = 0x01;  //0000 0001
+	DDRD = 0xff;  //1111 1111
+	
+	//timercounter0//
+	TCCR0 |=  (1<<CS02)  ;  //pre-scaler : 64
+	TIMSK |= (1 << TOIE0); //accept overflow interrupt
+	sei();  //accept global interrupt 
+	
+	while(1){
+		
+		
+		distance = measure_distance();
+		//_delay_ms(1);
+		//printf("%d \r\n", distance);
+		
+		
+	}
+	
+	
+	return 0;
+}
