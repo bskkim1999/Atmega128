@@ -24,14 +24,15 @@ ISR(TIMER3_OVF_vect){
 	distance = measure_distance();
 	
 	if(distance <=5){
-		DDRD = 0x01;
+		PORTD = 0x01;
 		time_steppermotor = 3;
 	}
 	else if(distance >5 && distance <10){
-		DDRD = 0x02;
+		PORTD = 0x02;
 		time_steppermotor = 2;
 	}
 	else{
+		PORTD = 0x00;
 		time_steppermotor = 1;
 	}
 }
