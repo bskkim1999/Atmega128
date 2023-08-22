@@ -1,0 +1,119 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <string.h>
+#include <util/atomic.h>
+#include <math.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+volatile int expected_pulses = 0;
+int angle=0;
+volatile int external_pulses=0;
+volatile int flag;
+
+//external interrupt - encoder
+ISR(INT0_vect){
+	
+	
+	//When detecting an external interrupt, the count rises by 1.
+	//입력한 각도에 따른 모터제어
+	if(external_pulses >= expected_pulses) {
+		cli();  //global interrupt(decline)
+		OCR1A = 0;  //dutycycle 0%, motor stop!
+		flag = 1;
+		
+	}
+		
+	else{
+		external_pulses = external_pulses + 1;
+		
+	}
+		
+	
+		
+		
+		
+}
+
+//pwm/ timercounter1, 파형출력핀 = OC1A, PB5
+void InitializeTimer1(void){
+	
+	TCCR1A = 0x82;  //  fast pwm, output mode  1000 0010
+	TCCR1B = 0x1a;  // pre-scaler : 8, 0001 1010
+	
+	ICR1 = 39999;  //compare-match interrupt, fpwm = 50hz(because of formula), this register decide top
+	
+	
+	
+}
+
+//interrupt (external)
+void INIT_INT0(void){
+	
+	EIMSK = 0x01;   //external interrupt INT0(PD0)
+	EICRA = 0x03;  //rising edge
+	sei();  //global interrupt(accept)
+	
+	
+	
+}
+
+int main(void){
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	//variable//
+	
+	
+	//uart//
+	UART0_init();
+	
+	//gpio//
+	DDRA = 0xff;  //output
+	DDRB = 0xff;  //output
+	DDRD = 0x00;  //input
+	
+	
+	
+	
+	PORTA = 0xff;  //for giving 5v (encoder)
+	 
+	
+	while (1) {
+		//timer&counter//
+		//printf("external_pulses : %d", external_pulses);
+		external_pulses = 0;
+		flag = 0;
+		INIT_INT0();
+		InitializeTimer1();
+		
+		
+		printf("input angle : ");
+		scanf("%d", &angle);
+		
+		expected_pulses = round(angle * 2.7972);  //형변환(실수형으로), 소수 첫째자리에서 반올림
+		//printf("expected_pulses : %d", expected_pulses);
+		
+		if(angle >= 0){
+			OCR1A = 2000;   //this register decide dutycycle, dutycycle = 5%, alive motor
+			
+			while(flag == 0);
+			
+			
+		}
+		
+		else{
+			continue;
+		}
+		
+	}
+	
+	
+	return 0;
+}
