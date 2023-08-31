@@ -26,7 +26,7 @@ ISR(INT4_vect){
 	
 	
 	//펄스수를 다 세었으면?
-	if(external_pulses >= expected_pulses) {
+	if(  (external_pulses !=0)  && (external_pulses >= expected_pulses)) {
 		cli();  //global interrupt(decline)
 		OCR1A = 0;  //dutycycle 0%, motor stop!
 		flag = 1;
@@ -124,8 +124,8 @@ int main(void){
 	
 	while (1) {
 		//초기화//
-		//external_pulses = 0;
-		//flag = 0;
+		external_pulses = 0;
+		flag = 0;
 		flag_cw = 0;
 		flag_ccw = 0;
 		
@@ -139,8 +139,8 @@ int main(void){
 		expected_pulses = round(angle * 5.59444);  //형변환(실수형으로), 소수 첫째자리에서 반올림
 		
 		if(angle >= 0){
-			external_pulses = 0;
-			flag = 0;  // 왜 이곳에 flag를 초기화 시켜야 하는가? 의문이다. 여기에 초기화를 시키지 않고 상단에서 초기화를 시키면 flag = 1이 됨.
+			//external_pulses = 0;
+			//flag = 0;  // 왜 이곳에 flag를 초기화 시켜야 하는가? 의문이다. 여기에 초기화를 시키지 않고 상단에서 초기화를 시키면 flag = 1이 됨.
 			OCR1A = 8000;   //this register decide dutycycle, dutycycle = 20%, alive motor
 			
 			//printf("check1!   ");
