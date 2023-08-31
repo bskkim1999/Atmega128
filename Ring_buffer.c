@@ -69,7 +69,7 @@ void uart_tx_buffer_write(unsigned char data){
 	
 }
 
-//데이터 송신 처리 : 인터럽트 서비스 루틴
+//데이터 송신 처리 : 인터럽트 서비스 루틴, 송신완료 되었다는 인터럽트가 발생할 때마다 실행한다.
 ISR(USART0_TX_vect){
 	
 	if(uart_tx_buffer.inptr != uart_tx_buffer.outptr){
