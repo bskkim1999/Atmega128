@@ -16,7 +16,7 @@ float realError = 0;
 float accError = 0;
 float errorGap = 0;
 
-
+int tmp = 0;
 void calculateErrors(void) {
 	errorGap = target - current - realError;
 	realError = target - current;	// 실시간 에러는 단순히 목표값 - 현재값을 의미합니다.
@@ -78,17 +78,23 @@ int main() {
 		
 		x = pidControl;   //속도
 
-		current = current + (unsigned int)x;  //위치는 속도에 따라서 변동된다.
+		current = current + (50 + tmp);  //위치는 속도에 따라서 변동된다.
+		
+		tmp = tmp + 2;
 
 		printf("pControl : %f \n", pControl);
 		printf("iControl : %f \n", iControl);
 		printf("dControl : %f \n", dControl);
 		printf("pidControl : %f \n", pidControl);
+
+		printf("realerror : %f \n", realError);
+		printf("errorgap : %f \n", errorGap);
 		printf("current : %d \n", current);
 
-		if (current > target) {
+		if (current >= target) {
 			break;
 		}
+
 
 		//printf("1");
 		//printf("current : %d \n", current);
