@@ -1,7 +1,7 @@
 //pid control
-#define P_GAIN 2
-#define	I_GAIN 0.01
-#define D_GAIN 0.8
+#define P_GAIN 4
+#define	I_GAIN 0.001
+#define D_GAIN 1.18
 //#define TIME 0.007
 //atmega system
 #define F_CPU 16000000UL
@@ -15,7 +15,7 @@
 FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
 FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
 
-int data[500]={0};
+
 
 volatile long external_pulses=0;
 volatile long expected_pulses = 0;  //long = 4byte
@@ -169,7 +169,7 @@ void pidControlSystem(void) {
 void calculateErrors(void) {
 	errorGap = target - current - realError;  //목표 값 - 현재 값 - 실시간 에러
 	realError = target - current;	// 실시간 에러는 단순히 목표값 - 현재값을 의미합니다.
-    accError += realError;  //누적 에러
+    	accError += realError;  //누적 에러
     /*
     	누적 에러는 실시간 에러를 계속해서 더한 값입니다.
         I 제어를 위해 사용됩니다.
@@ -301,18 +301,7 @@ int main(void){
 			continue;
 		}
 		
-		//_delay_ms(2000);
 		
-		printf("1 \r\n");
-		//debugging test(for checking data)
-		/*
-		for(int i=0 ; i<500 ; i++){
-			printf("OCR1A : %d \r\n", data[i]);
-		}
-		
-		_delay_ms(5000);
-		printf("2 \r\n");
-		*/
 	}
 	
 	printf("finish!");
