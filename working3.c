@@ -70,7 +70,6 @@ ISR(INT4_vect){
 	}
 	
 	
-	
 }
 
 //interrupt (external), encoder A
@@ -89,13 +88,7 @@ void InitializeTimer1(void){
 	
 	ICR1 = 39999;  //compare-match interrupt, fpwm = 50hz(because of formula), this register decide top
 	
-	
-	
 }
-
-
-
-
 
 int main(void){
 	
@@ -114,11 +107,7 @@ int main(void){
 	DDRD = 0x00;  //input, //encoder B, for using gpio
 	DDRE = 0x00;  //input, //encoder A, for using external interrupt
 	
-	
 	PORTA = 0xff;  ////for giving 5v (power)
-	
-	/*timer&counter*/
-	
 	
 	while (1) {
 		//초기화//
