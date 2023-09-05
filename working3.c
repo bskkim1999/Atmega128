@@ -58,6 +58,15 @@ ISR(INT4_vect){
 	else{
 		external_pulses ++;  //펄스 개수 셈.
 		current++;  //현재 펄스 수를 센다. (pid)
+		
+		//pid control
+		calculateErrors();
+		pControlSystem();
+		iControlSystem();
+		dControlSystem();
+		
+		pidControlSystem();  //dutycycle 결정 (OCR1A)
+		
 		//홀수번째
 		if(count % 2 == 1){
 			//PIND가 0이라면?cw이다.
@@ -245,16 +254,7 @@ int main(void){
 			//2번 카운트 될 때 마다 시계방향 또는 반시계방향을 결정함.
 			//if - else if문 들어올 때 마다 초기화시키고, cw인지 ccw인지 확실하게 결정하기 위해서 "2이상" 이라는 조건을 덧붙임.
 			while(1){
-				//pid control
-				calculateErrors();
-				pControlSystem();
-				iControlSystem();
-				dControlSystem();
 				
-				pidControlSystem();
-				
-				//printf("OCR1A : %d      \r\n", OCR1A);
-				//printf("pidControl : %f \r\n", pidControl);
 				//펄스수를 다 세었으면 무한루프 탈출
 				if(flag == 1){
 					//초기화
