@@ -15,8 +15,6 @@ volatile int count = 0;  //n번째
 
 volatile int flag_cw = 0;
 volatile int flag_ccw = 0;
-
-
 int angle=0;
 volatile int flag=0;
 //encoder(PE4), encoder A
