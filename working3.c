@@ -2,7 +2,7 @@
 #define P_GAIN 4
 #define	I_GAIN 0.001
 #define D_GAIN 1.18
-//#define TIME 0.001
+#define TIME 0.001
 //atmega system
 #define F_CPU 16000000UL
 #include <avr/io.h>
@@ -30,6 +30,7 @@ volatile int flag=0;
 //pid control variable
 unsigned long target = 0;  //목표 펄스수
 unsigned long current = 0;   //현재 펄스수
+
 float pControl = 0;
 float iControl = 0;
 float dControl = 0;
@@ -38,6 +39,16 @@ float realError = 0;
 float accError = 0;
 float errorGap = 0;
 
+float dutycycle_pwm = 0;
+
+//////////////////////////////////////function prototype///////////////////////////////////////
+
+void calculateErrors(void);
+void pControlSystem(void);
+void iControlSystem(void);
+void dControlSystem(void);
+
+void pidControlSystem(void);  
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //encoder(PE4), encoder A
@@ -66,6 +77,7 @@ ISR(INT4_vect){
 		dControlSystem();
 		
 		pidControlSystem();  //dutycycle 결정 (OCR1A)
+		
 		
 		//홀수번째
 		if(count % 2 == 1){
@@ -97,6 +109,7 @@ ISR(INT4_vect){
 			
 		}
 		
+		
 	}
 	
 	
@@ -125,6 +138,19 @@ void InitializeTimer1(void){
 	
 }
 /////////////////////////pid function/////////////////////////////////
+
+void calculateErrors(void) {
+	errorGap =  target -  current - realError;  //목표 값 - 현재 값 - 실시간 에러
+	realError =  target -  current;	// 실시간 에러는 단순히 목표값 - 현재값을 의미합니다.
+    accError += realError;  //누적 에러
+    /*
+    	누적 에러는 실시간 에러를 계속해서 더한 값입니다.
+        I 제어를 위해 사용됩니다.
+	*/
+    
+
+}
+
 void pControlSystem(void) {
 
 	pControl = P_GAIN * realError;
@@ -134,14 +160,14 @@ void pControlSystem(void) {
 
 void iControlSystem(void) {
 
-	iControl = I_GAIN * accError ;
+	iControl =  I_GAIN * (accError * TIME) ;
 
 	
 }
 
 void dControlSystem(void) {
 
-	dControl = D_GAIN * errorGap;
+	dControl =  D_GAIN * (errorGap / TIME);
 
 	
 }
@@ -150,23 +176,23 @@ void pidControlSystem(void) {
 	
 	pidControl = pControl + iControl + dControl;
 	
-	pidControl = pidControl * 2.875;  //1바퀴, 360도
+	dutycycle_pwm =  pidControl ;
 	//dutycycle을 조정함으로써 모터속도를 제어해야 한다. 최대 dutycycle = 30000 (75%), 최소 dutycycle = 2000(5%) 
 	//dutycycle >= 75% 라고 계산결과(pid결과)가 나왔으면?
-	if(pidControl >= 30000){
-		OCR1A = 30000;
+	if(dutycycle_pwm >= 30000){
+		OCR1A = 30000;   //dutycycle 75%
 	}
 	
 	//pidControl < 30000 이라면?
 	else {
 		//dutycycle <= 5% 라면?
-		if(pidControl <= 2000){
+		if(dutycycle_pwm <= 2000){
 			OCR1A = 2000;  //dutycycle = 5%로 고정
 		}
 		// 5% < dutycycle < 75%
 		//2000 < pidControl < 30000
 		else{
-			OCR1A = pidControl;  //decide pwm, control motor speed
+			OCR1A = (unsigned long) dutycycle_pwm;  //decide pwm, control motor speed
 		}
 		
 	}
@@ -175,17 +201,7 @@ void pidControlSystem(void) {
 	
 }
 
-void calculateErrors(void) {
-	errorGap = target - current - realError;  //목표 값 - 현재 값 - 실시간 에러
-	realError = target - current;	// 실시간 에러는 단순히 목표값 - 현재값을 의미합니다.
-    accError += realError;  //누적 에러
-    /*
-    	누적 에러는 실시간 에러를 계속해서 더한 값입니다.
-        I 제어를 위해 사용됩니다.
-	*/
-    
 
-}
 
 int main(void){
 	
@@ -248,7 +264,18 @@ int main(void){
 			InitializeTimer1();
 			
 			flag = 0;  
-			OCR1A = 2000;   //this register decide dutycycle, dutycycle = 5%, alive motor, control speed
+			
+			//pid control  (1번만 실행)
+			calculateErrors();
+			pControlSystem();
+			iControlSystem();
+			dControlSystem();
+			
+			pidControlSystem();  //dutycycle 결정 (OCR1A)
+			
+			
+			
+			//OCR1A = 2000;   //this register decide dutycycle, dutycycle = 5%, alive motor, control speed
 			
 			
 			//2번 카운트 될 때 마다 시계방향 또는 반시계방향을 결정함.
@@ -283,16 +310,31 @@ int main(void){
 						flag_cw = 0; //초기화
 						flag_ccw = 0;  //초기화
 					}
-					//printf("OCR1A : %d \r\n", OCR1A);
-					//printf("external pulses : %ld \r\n", external_pulses);
-					//printf("expected_pulses : %ld \r\n", expected_pulses);
+					
+					//printf("target : %ld   ", target);
+					
 					//printf("count : %ld \r\n", count);
+					
 				}
 				
+				//printf("errorGap : %f     ", errorGap);
+				//printf("realError : %f     ", realError);
+				//printf("accError : %f     ", accError);
+				//printf("current : %ld   ", current);
+				
+				
+				printf("OCR1A : %d      ", OCR1A);
+				//printf("pControl : %f    ", pControl);
+				//printf("iControl : %f    ", iControl);
+				//printf("dControl : %f    ", dControl);
+				
+				//printf("pidControl : %f      ", pidControl);
+				//printf("external pulses : %ld \r\n", external_pulses);
+				//printf("expected_pulses : %ld \r\n", expected_pulses);
 				//check dutycycle
 				//printf("OCR1A : %d \r\n", OCR1A);
 				//printf("external_pulses : %ld \r\n", external_pulses);
-				
+				printf("dutycyclepwm : %f \r\n", dutycycle_pwm);
 			}
 			
 		}
