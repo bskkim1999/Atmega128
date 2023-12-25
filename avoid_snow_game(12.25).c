@@ -20,6 +20,7 @@
 #define Backlight 0x08
 #define COMMAND_DISPLAY_ON_OFF_BIT 2 //0000 0010
 #define COMMAND_CLEAR_DISPLAY 0x01 //0000 0001
+#define Set_CGRAM_Address 0x40
 /////////////////////////////////////////////////////
 FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
 FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
@@ -38,6 +39,8 @@ unsigned char lcd_screen_data[2][16]={
 	{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
 	
 };
+
+unsigned char character_code[8]={0x1F, 0x15, 0x1F, 0x1F, 0x0E, 0x0A, 0x1B, 0x00};
 	
 ISR(TIMER0_OVF_vect){
 	
@@ -64,16 +67,13 @@ ISR(INT4_vect){
 	//짝수일경우
 	if(count_character_moving % 2 == 0) {
 		case_even++;
-		//write_lcd_screen_data(1,0,'O');
-		//write_lcd_screen_data(0,0,' ');
-	}
 		
+	}
 	
 	//홀수일경우
 	else {
 		case_odd++;
-		//write_lcd_screen_data(0,0,'O');
-		//write_lcd_screen_data(1,0,' ');
+		
 	}
 	//printf("count_character_moving : %d \r\n", count_character_moving);
 	
@@ -230,7 +230,7 @@ void again_write_address(void){
 	//데이터를 연속적으로 보내기 위해서는 주소를 다시 써야 함.////////
 	TWI_Start();
 	TWI_Write(0x4E);  //slave address, write mode (0100 1110)
-	_delay_ms(1); 
+	_delay_us(300); 
 	
 }
 
@@ -264,10 +264,11 @@ void write_lcd_screen_data(int row, int col, unsigned char data){
 
 void move_right_to_left_lcd_screen_data(void){
 	
-	
-	
-	
-	
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 1; j < 16 - 1; ++j) {
+			lcd_screen_data[i][j] = lcd_screen_data[i][j + 1];
+		}
+	}
 }
 
 void INT4_external_interrupt(void){
@@ -325,10 +326,13 @@ void init_timer0(){
 
 int main() {
 	int count_character_moving = 0;
-	unsigned long tp_character,tp_snow;
-	unsigned long tc_character,tc_snow;
+	unsigned long tp_move_screen,tp_snow;
+	unsigned long tc_move_screen,tc_snow;
 	int read=0;
 	int value = 0;
+	int prior_value = 0;
+	unsigned char (*ptr2) [16] = lcd_screen_data;  //2차원 배열의 포인터이다.
+	
 	
 	stdout = &OUTPUT;
 	stdin = &INPUT;
@@ -353,7 +357,11 @@ int main() {
 	
 	//lcd start
 	LCD_init();
-	
+	LCD_write_command_8bit(Set_CGRAM_Address);  //사용자 정의 문자를 저장하기 위함.
+	for(int i=0 ; i<8 ; i++){  // 사용자 정의 문자를 저장하는 코드.
+		LCD_write_data(character_code[i]);
+	}
+	LCD_init();
 	
 	//ADC (for making random seed)
 	ADC_init(0); //PF0을 사용함.
@@ -362,23 +370,26 @@ int main() {
 	//interrupt
 	sei();  //accept global interrupt
 	INT4_external_interrupt();
-	write_lcd_screen_data(1,0,'O');
+	write_lcd_screen_data(1,0,0);
 	show_lcd_screen_by_lcd_screen_data(); 
 	
 	//timer/counter
 	init_timer0();
 	
-	//tp_character = millis();
+	
 	tp_snow = millis();
+	tp_move_screen = millis();
 	
 	while(1){
 		
 		//tc_character = millis();
 		tc_snow = millis();
+		tc_move_screen = millis();
 		
-		//task 1 : ADC, check every 0.2 seconds
+		//task 1 : ADC, check every 0.2 seconds, to produce snow
 		if(tc_snow - tp_snow > 200){
 			tp_snow = tc_snow;
+			
 			read = read_ADC();
 			//0이 너무 자주 나와서 0일 때는 제외시킴.
 			if(read == 0){
@@ -387,19 +398,36 @@ int main() {
 			
 			else{
 				srand(read);
-				value = rand() % 2;  //0 or 1
-				
+				value = rand() % 4;  //0 or 1 or 2 or 3 
+				//printf("%d \r\n", value);
 				//0.2초마다 실행.
-				//짝수일경우에는 눈(*)을 1행 15열에 생성.
-				if(value == 0){
+				//0일경우에는 눈(*)을 1행 15열에 생성.
+				if( (value == 0) && (prior_value != 1)  ){
+					
 					write_lcd_screen_data(1,15,'*');
 					write_lcd_screen_data(0,15,' ');
-					
+					printf("row:1 \r\n");
+					prior_value = 0;
 				}
-				//홀수일경우
+				//
 				else{
-					write_lcd_screen_data(1,15,' ');
-					write_lcd_screen_data(0,15,'*');
+					//1일경우에는 눈(*)을 0행 15열에 생성
+					if( (value == 1) && (prior_value != 0)){
+						
+						write_lcd_screen_data(1,15,' ');
+						write_lcd_screen_data(0,15,'*');
+						printf("row:0 \r\n");
+						prior_value = 1;
+					}
+					
+					//2,3일 경우에는 아무것도 생성안함. 캐릭터가 눈을 피하기 위한 공간을 형성.
+					else{
+						
+						write_lcd_screen_data(1,15,' ');
+						write_lcd_screen_data(0,15,' ');
+						printf("nothing \r\n");
+						prior_value = 2;
+					}
 					
 				}
 				show_lcd_screen_by_lcd_screen_data();  //배열의 값을 lcd에 표시해주는 함수
@@ -410,14 +438,14 @@ int main() {
 			
 			//짝수일경우
 			if(case_even == 1){
-				write_lcd_screen_data(1,0,'O');
+				write_lcd_screen_data(1,0,0);
 				write_lcd_screen_data(0,0,' ');
 			}
 			//홀수일경우
 			else{
 				if(case_odd == 1){
 					write_lcd_screen_data(1,0,' ');
-					write_lcd_screen_data(0,0,'O');
+					write_lcd_screen_data(0,0,0);
 				}
 			}
 			show_lcd_screen_by_lcd_screen_data();  //배열의 값을 lcd에 표시해주는 함수
@@ -428,8 +456,62 @@ int main() {
 			
 		}
 		
+		//moving snow.
+		if(tc_move_screen - tp_move_screen  > 100){
+			
+			tp_move_screen = tc_move_screen;
+			move_right_to_left_lcd_screen_data();  //배열의 값을 왼쪽으로 한 칸 옮김. (1열 ~ 15열에만 해당함.)
+			/*
+			//check if snow is on col 1
+			if( lcd_screen_data[0][1] == '*' ){
+				
+				
+			}
+			
+			if( lcd_screen_data[1][1] == '*'){
+				
+			}
+			*/
+			show_lcd_screen_by_lcd_screen_data();  //배열의 값을 lcd에 표시해주는 함수
+			
+		}
+		
+		
+		
 	} //while(1)
 	TWI_Stop();
 	return 0;
 	
 }  //main()
+
+/*
+int main(void){
+	
+	int read;
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	UART0_init();
+	ADC_init(0); //PF0을 사용함.
+	
+	while(1){
+		
+		read = read_ADC();
+		if(read == 0){
+			continue;
+		}
+		else{
+			srand(read);
+			
+			printf("%d \r\n", rand() % 2);
+			
+			_delay_ms(100); //0.1초
+		}
+		
+		
+	}
+	
+	
+}
+*/
