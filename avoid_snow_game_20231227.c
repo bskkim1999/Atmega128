@@ -251,6 +251,14 @@ void lcd_goto_XY(unsigned char row, unsigned char col)
 	LCD_write_command_8bit(command);
 }
 
+void LCD_write_string(unsigned char *string){
+	unsigned char i;
+	for(i=0 ; string[i] != '\0' ; i++){
+		LCD_write_data(string[i]);
+	}
+}
+
+
 void show_lcd_screen_by_lcd_screen_data(void){
 	
 	for(int row = 0 ; row < 2 ; row++){
@@ -343,6 +351,8 @@ int main() {
 	unsigned char (*ptr2) [16] = lcd_screen_data;  //2차원 배열의 포인터이다.
 	int col_1_row_0_flag=0;
 	int col_1_row_1_flag=0;
+	int score = 0;
+	unsigned char arr_score[4];
 	
 	stdout = &OUTPUT;
 	stdin = &INPUT;
@@ -501,6 +511,7 @@ int main() {
 			//만약, 0행 1열에 눈(*)이 존재하고, 0행 0열에 캐릭터가 존재하지 않으면?(캐릭터가 1행 0열에 위치할 경우, 즉,  눈을 피할경우) (참고로 캐릭터는 숫자0이다.)
 			if( (col_1_row_0_flag == 1) && (lcd_screen_data_col_0_row_0 != 0)){
 				lcd_screen_data[0][0] = '*';  //0행 0열에 눈(*)을 lcd 배열 데이터에 추가한다.
+				score++;
 				//printf("row:0,col:1 \r\n");
 			}
 			
@@ -517,6 +528,7 @@ int main() {
 			//만약, 1행 1열에 눈(*)이 존재하고, 1행 0열에 캐릭터가 존재하지 않으면? (참고로 캐릭터는 숫자0이다.)
 			if( (col_1_row_1_flag == 1) && (lcd_screen_data_col_0_row_1 != 0)){
 				lcd_screen_data[1][0] = '*';  //1행 0열에 눈(*)을 lcd 배열 데이터에 추가한다.
+				score++;
 				//printf("row:1,col:1 \r\n");
 			}
 			else{
@@ -541,8 +553,12 @@ int main() {
 		
 	} //while(1)
 	
+	//lcd_write_data() 의 매개변수는 문자만 올 수 있으므로, score(점수)를 문자열로 변경한다.
+	sprintf(arr_score, "%d", score);
+	
 	//게임 실패 이후 lcd 모니터 상황.
 	while(1){
+		
 		lcd_goto_XY(0,0);
 		LCD_write_data('g');
 		LCD_write_data('a');
@@ -554,25 +570,18 @@ int main() {
 		LCD_write_data('e');
 		LCD_write_data('r');
 		lcd_goto_XY(1,0);
-		LCD_write_data('M');
-		LCD_write_data('a');
-		LCD_write_data('d');
-		LCD_write_data('e');
-		LCD_write_data(' ');
-		LCD_write_data('b');
-		LCD_write_data('y');
-		LCD_write_data(' ');
-		LCD_write_data('b');
-		LCD_write_data('o');
 		LCD_write_data('s');
-		LCD_write_data('e');
+		LCD_write_data('c');
 		LCD_write_data('o');
-		LCD_write_data('k');
+		LCD_write_data('r');
+		LCD_write_data('e');
+		LCD_write_data(':');
+		LCD_write_string(arr_score);
+		
 	}
 	TWI_Stop();
 	
 	return 0;
 	
 }  //main()
-
 
