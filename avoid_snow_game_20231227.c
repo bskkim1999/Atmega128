@@ -416,7 +416,7 @@ int main() {
 					
 					write_lcd_screen_data(1,15,'*');
 					write_lcd_screen_data(0,15,' ');
-					printf("row:1 \r\n");
+					//printf("row:1 \r\n");
 					prior_value = 0;
 				}
 				//
@@ -426,7 +426,7 @@ int main() {
 						
 						write_lcd_screen_data(1,15,' ');
 						write_lcd_screen_data(0,15,'*');
-						printf("row:0 \r\n");
+						//printf("row:0 \r\n");
 						prior_value = 1;
 					}
 					
@@ -435,7 +435,7 @@ int main() {
 						
 						write_lcd_screen_data(1,15,' ');
 						write_lcd_screen_data(0,15,' ');
-						printf("nothing \r\n");
+						//printf("nothing \r\n");
 						prior_value = 2;
 					}
 					
@@ -475,16 +475,6 @@ int main() {
 			lcd_screen_data_col_0_row_0 = lcd_screen_data[0][0];
 			lcd_screen_data_col_0_row_1 = lcd_screen_data[1][0];
 			
-			//0열 검사 (만약 0열에 한 곳이라도 눈이 있을 경우에는 move_right_to_left_lcd_screen_data() 호출 이후에는 눈을 제거함.)
-			
-			if(lcd_screen_data_col_0_row_0 == '*'){
-				lcd_screen_data[0][0] = ' ';
-			}
-			
-			if(lcd_screen_data_col_0_row_1 == '*'){
-				lcd_screen_data[1][0] = ' ';
-			}
-			
 			//check if snow is on col 1    [row][col]
 			if( lcd_screen_data[0][1] == '*' ){
 				col_1_row_0_flag++;
@@ -498,11 +488,20 @@ int main() {
 			
 			move_right_to_left_lcd_screen_data();  //배열의 값을 왼쪽으로 한 칸 옮김. (1열 ~ 15열에만 해당함.)
 			
+			//0열 검사 (만약 0열에 한 곳이라도 눈이 있을 경우에는 move_right_to_left_lcd_screen_data() 호출 이후에는 눈을 제거함.)
+			if(lcd_screen_data_col_0_row_0 == '*'){
+				lcd_screen_data[0][0] = ' ';
+			}
+			
+			if(lcd_screen_data_col_0_row_1 == '*'){
+				lcd_screen_data[1][0] = ' ';
+			}
+			
 			//눈(*)을 캐릭터가 정면으로 맞았을 경우.
-			//만약, 0행 1열에 눈(*)이 존재하고, 0행 0열에 캐릭터가 존재하지 않으면?(캐릭터가 0행 1열에 위치할 경우, 즉,  눈을 피할경우) (참고로 캐릭터는 숫자0이다.)
+			//만약, 0행 1열에 눈(*)이 존재하고, 0행 0열에 캐릭터가 존재하지 않으면?(캐릭터가 1행 0열에 위치할 경우, 즉,  눈을 피할경우) (참고로 캐릭터는 숫자0이다.)
 			if( (col_1_row_0_flag == 1) && (lcd_screen_data_col_0_row_0 != 0)){
-				lcd_screen_data[0][0] == '*';  //0행 0열에 눈(*)을 lcd 배열 데이터에 추가한다.
-				
+				lcd_screen_data[0][0] = '*';  //0행 0열에 눈(*)을 lcd 배열 데이터에 추가한다.
+				//printf("row:0,col:1 \r\n");
 			}
 			
 			
@@ -517,8 +516,8 @@ int main() {
 			
 			//만약, 1행 1열에 눈(*)이 존재하고, 1행 0열에 캐릭터가 존재하지 않으면? (참고로 캐릭터는 숫자0이다.)
 			if( (col_1_row_1_flag == 1) && (lcd_screen_data_col_0_row_1 != 0)){
-				lcd_screen_data[1][0] == '*';  //1행 0열에 눈(*)을 lcd 배열 데이터에 추가한다.
-				
+				lcd_screen_data[1][0] = '*';  //1행 0열에 눈(*)을 lcd 배열 데이터에 추가한다.
+				//printf("row:1,col:1 \r\n");
 			}
 			else{
 				//만약, 1행 1열에 눈(*)이 존재하고, 1행 0열에 캐릭터가 존재하여 한 칸 이동 후 겹쳐지면? 게임 오버.
