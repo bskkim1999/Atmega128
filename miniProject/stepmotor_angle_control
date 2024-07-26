@@ -1,0 +1,99 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+const unsigned char steps[] = {0x01,0x03,0x02,0x06,0x04,0x0c,0x08,0x09};
+
+
+////////////////////////////////////////////////////////////////////////////////////
+
+void clockwise_func(int count_steps_local){
+	printf("waiting...\r\n");
+	while(count_steps_local > 0){
+		
+		for(int i=0 ; i<8 ; i++){
+			
+			PORTB = steps[i];
+			count_steps_local--;
+			
+			_delay_ms(1);
+		}
+		
+		
+	}
+	
+}
+
+void counter_clockwise_func(int count_steps_local){
+	printf("waiting...\r\n");
+	while(count_steps_local > 0){
+		
+		for(int i=7 ; i>=0 ; i--){
+			PORTB = steps[i];
+			count_steps_local--;
+			_delay_ms(1);
+		}
+		
+		
+	}
+	
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+int main() {
+	
+	int angle;
+	int direction;
+	int count_steps=0;
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	
+	/*uart*/
+	UART0_init();
+	DDRB = 0xff;
+	
+	while(1){
+		printf("input angle and direction(cw:1, ccw:-1)(ex : 180 1)(angle_max : 2800) :  ");
+		
+		scanf("%d %d", &angle, &direction);
+		
+		count_steps = angle * 11.3778;
+		
+		if(angle >= 0){
+			//cw
+			if(direction==1){
+				clockwise_func(count_steps);
+			}
+			//ccw
+			else if(direction==-1){
+				counter_clockwise_func(count_steps);
+			}
+			
+			else{
+				continue;
+			}
+		}		
+		
+		else{
+			printf("The angle shall not be less than zero. \r\n");
+			continue;
+		}
+		
+		
+	}
+	
+	
+	return 0;
+}

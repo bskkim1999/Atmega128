@@ -1,0 +1,177 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <string.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+volatile unsigned long timer0_millis = 0;   //4byte
+volatile int timer0_micros = 0;  // 2byte
+
+
+ISR(TIMER0_OVF_vect){
+	
+	unsigned long m = timer0_millis;
+	int f = timer0_micros;
+	
+	m+=1;
+	f+=24;
+	
+	m+=(f/1000);
+	f = f % 1000;
+	
+	timer0_millis = m;
+	timer0_micros = f;
+	
+	
+}
+unsigned long millis(){
+	unsigned long m;
+	uint8_t oldSREG = SREG;
+	
+	cli();  //inactive interrupt (global)
+	m = timer0_millis;
+	SREG = oldSREG;   //set Global Interrupt Enable
+	
+	return m;
+}
+double measure_distance(void){
+	
+	Timer_init();
+	
+	PORTA = 0x01;  //0000 0001
+	_delay_us(10);
+	PORTA = 0x03;  //0000 0011
+	_delay_us(10);
+	PORTA = 0x01;  //0000 0001
+	
+	
+	
+	TCNT1 = 0x0000;
+	
+	
+	while(0x00 == (PINC & 0x01)){
+		if(TCNT1 > 65535 ){
+			return 0;
+		}
+		
+	}
+	
+	
+	TCNT1 = 0x0000;   //start : timerCounter1
+	
+	while(0x01 == (PINC & 0x01));
+		
+	TCCR1B=0x00;  // stop : timerCounter1
+	
+	double pulse_time = (1024.0 * TCNT1) / 16;    //notice : literal constant!!
+	
+	
+	return pulse_time / 58.0;
+	
+}
+
+void Timer_init(void){
+	
+	TCCR1B = 0x05;  //pre-scaler : 1024
+	
+}
+
+void Timer_init0(void){
+	TCCR0 = 1 << CS02;   //pre-scaler : 64
+	TIMSK = 1 << TOIE0;  //accept overflow interrupt
+	
+	sei();   //activate interrupt (global)
+}
+
+
+int main(void){
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	/*variable*/
+	double distance;
+	int led_state =0;  
+	unsigned long tp, tp_led, tc;
+	
+	
+	/*uart*/
+	UART0_init();
+	
+	/*gpio*/
+	DDRA = 0xff; //output
+	DDRB = 0xff; //output
+	DDRC = 0x00; //input
+	
+	/*timer&counter*/
+	Timer_init();
+	Timer_init0();
+	
+	PORTB = 0x00;  //led off
+	tp = millis();
+	tp_led = millis();
+	
+	/* Replace with your application code */
+	while (1) {
+		tc = millis();
+		
+		//printf("distance : %f cm \r\n", distance);
+		
+		//ultrasonic
+		if(tc - tp > 50){
+			tp = tc;
+			distance = measure_distance();
+		}
+		
+		//led
+		// 1 second period
+		
+		if(distance > 15 && distance <=20){
+			if(tc - tp_led > 1000){
+				tp_led = tc;
+				led_state = (led_state + 1) % 2;
+				PORTB = led_state;
+				
+			}
+		}
+		
+		// 0.5 second period
+		else if(distance>10 && distance <=15){
+			if(tc - tp_led > 500){
+				tp_led = tc;
+				led_state = (led_state + 1) % 2;
+				PORTB = led_state;
+				
+			}
+		}
+		// 0.3 second period
+		else if(distance > 5 && distance <=10){
+			if(tc - tp_led > 300){
+				tp_led = tc;
+				led_state = (led_state + 1) % 2;
+				PORTB = led_state;
+				
+			}
+		}
+		// 0.1 second period
+		else if(distance >= 0 && distance <= 5){
+			if(tc - tp_led > 100){
+				tp_led = tc;
+				led_state = (led_state + 1) % 2;
+				PORTB = led_state;
+				
+			}
+		}
+		else{
+			PORTB = 0x00;
+		}
+		
+	}
+	
+	return 0;
+}
