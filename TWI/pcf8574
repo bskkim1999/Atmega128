@@ -1,0 +1,135 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <string.h>
+#include "UART0.h"
+
+FILE OUTPUT = FDEV_SETUP_STREAM(UART0_transmit, NULL, _FDEV_SETUP_WRITE);
+FILE INPUT = FDEV_SETUP_STREAM(NULL, UART0_receive, _FDEV_SETUP_READ);
+
+
+// TWI(I2C) 통신 초기화 함수
+void TWI_Init() {
+	// TWI 클럭 주파수 설정 (SCL_freq = CPU_clk / (16 + 2 * TWBR * Prescaler))
+	
+	TWSR = (0<<TWPS0) | (0<<TWPS1);
+	TWBR = 72;  // TWBR 값 설정 (주파수를 조절하여 원하는 클럭 주파수 설정)  100khz
+	_delay_ms(10);  //setup bus free time
+}
+
+// TWI(I2C) 통신 시작 함수
+void TWI_Start() {
+	TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+	
+	while (!(TWCR & (1 << TWINT)));
+}
+
+// TWI(I2C) 통신 종료 함수
+void TWI_Stop() {
+	TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+}
+
+// TWI(I2C) 통신으로 데이터 전송 함수
+void TWI_Write(unsigned char data) {
+	
+	TWDR = data;
+	TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
+	
+	while (!(TWCR & (1 << TWINT)));
+}
+
+void twi_write(unsigned char add, unsigned char dat1){
+
+	/* STEP1 Start */
+	TWCR = (1<<TWSTA)|(1<<TWINT)|(1<<TWEN); //start
+
+	/* STEP2 Start check */
+	while(1)
+	{
+		if((TWCR & 0x80) && ((TWSR & 0xf8) == 0x08))
+		break;
+	}
+
+	/* STEP3 Address send */
+	TWDR = add<<1 | 0; // slave address, write
+	TWCR = (1<<TWINT)|(1<<TWEN);
+
+	/* STEP4 ACK Check */
+	
+	while(1)
+	{
+		if((TWCR & 0x80) && ((TWSR & 0xf8) ==0x18))
+		break;
+		if((TWCR & 0x80) && ((TWSR & 0xf8) == 0x20))
+		return 0;
+	}
+	
+	/* STEP5 Data send */
+	TWDR = dat1;
+	TWCR = (1<<TWINT)|(1<<TWEN);
+	
+	/* STEP6 Data send check */
+	while(1)
+	{
+		if((TWCR & 0x80) && ((TWSR & 0xf8) == 0x28))
+		break;
+		if((TWCR & 0x80) && ((TWSR & 0xf8) == 0x30))
+		return 0;
+	}
+	
+	/* STEP7 STOP */
+	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
+	
+	
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+int main() {
+	
+	
+	stdout = &OUTPUT;
+	stdin = &INPUT;
+	
+	/*uart*/
+	//UART0_init();
+	
+	DDRA = 0xff;   //output
+	DDRD = 0xff;   //output(SDA, SCL)
+	DDRB = 0xff;   //output
+	
+	
+	PORTA = 0x01;  // 0000 0001   (power 5v)
+	PORTD = 0xff;  // 1111 1111
+	
+	TWI_Init();
+	
+	TWI_Start();
+	
+	
+	TWI_Write(0x70);  //address, write mode
+	
+	
+	
+	while(1){
+		TWI_Write(0xf0);
+		_delay_ms(500);
+		TWI_Write(0x00);
+		_delay_ms(100);
+	}
+	
+	
+	//
+	TWI_Stop();
+	
+	PORTB = 0xff;  //debugging 
+	
+	
+	while (1) {
+		
+	}
+	return 0;
+}
